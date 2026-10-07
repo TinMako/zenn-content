@@ -1,0 +1,26 @@
+name: Validate Zenn articles
+# 同一PRの古い実行だけを置き換え、pushの検証は中断しない。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: .github/requirements-ci.txt
+      - name: Install validator dependency
+        run: python -m pip install -r .github/requirements-ci.txt
+      - name: Validate article front matter and slugs
+        run: python .github/scripts/check_zenn.py
